@@ -139,7 +139,7 @@ try {
 
 // contenu de la page de bienvenue : modifiable en base sans toucher au front
 const WELCOME = {
-  brand: 'FitPulse',
+  brand: 'FitLife',
   titleLines: ['Push', 'Yourself', 'Harder'],
   subtitle: 'Achieve your fitness goals with our innovative fitness app.',
   cta: 'Get started',
@@ -147,6 +147,8 @@ const WELCOME = {
   poster: 'media/photos/17210041.jpg',
 };
 db.prepare('INSERT OR IGNORE INTO content (key, value) VALUES (?, ?)').run('welcome', JSON.stringify(WELCOME));
+// renommage de la marque : met à jour le contenu déjà enregistré
+db.prepare("UPDATE content SET value = json_set(value, '$.brand', ?) WHERE key = 'welcome' AND json_extract(value, '$.brand') = 'FitPulse'").run(WELCOME.brand);
 
 export const getContent = (key) => {
   const row = db.prepare('SELECT value FROM content WHERE key = ?').get(key);

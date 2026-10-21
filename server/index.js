@@ -450,4 +450,4 @@ app.use((err, _req, res, _next) => {
 });
 
 setInterval(() => db.prepare('DELETE FROM sessions WHERE expires_at < ?').run(Date.now()), 3600 * 1000).unref();
-app.listen(PORT, () => console.log(`FitPulse API on http://localhost:${PORT}`));
+app.listen(PORT, () => console.log(`FitLife API on http://localhost:${PORT}`));

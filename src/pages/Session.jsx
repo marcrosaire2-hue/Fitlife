@@ -173,7 +173,7 @@ export function Summary() {
   const mins = Math.max(1, Math.round(s.seconds / 60));
   const goalPct = Math.min(100, Math.round((today.kcal / today.goal) * 100));
   const share = async () => {
-    const text = `I just finished ${s.workout.title} on FitPulse: ${s.kcal} kcal in ${mins} min!`;
+    const text = `I just finished ${s.workout.title} on FitLife: ${s.kcal} kcal in ${mins} min!`;
     try {
       if (navigator.share) await navigator.share({ text });
       else { await navigator.clipboard.writeText(text); notify('Copied to clipboard'); }

@@ -23,7 +23,7 @@ const BARE = ['/welcome', '/goals', '/session', '/summary'];
 function Nav({ side }) {
   return (
     <nav className={side ? 'side' : 'tabbar'} aria-label="Main">
-      {side && <div className="logo">Fit<span>Pulse</span></div>}
+      {side && <div className="logo">Fit<span>Life</span></div>}
       {NAV.map(([to, ic, label]) => (
         <NavLink key={to} to={to} className={({ isActive }) => 'tab' + (isActive ? ' on' : '')} aria-label={label}>
           <Icon n={ic} />{side && <span>{label}</span>}

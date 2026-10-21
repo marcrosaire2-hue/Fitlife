@@ -1,4 +1,4 @@
-# FitPulse
+# FitLife
 
 Application de fitness : React (Vite) + API Node/Express + SQLite.
 
