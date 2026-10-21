@@ -1,0 +1,2 @@
+Photos and videos: Pexels (https://www.pexels.com), free to use under the Pexels License (no attribution required).
+Photo IDs are the file names in photos/ (pexels.com/photo/<id>). Videos: 7314350, 7986112, 8402080, 6152675, 6326786, 6438175, 35585591, 35585700.
