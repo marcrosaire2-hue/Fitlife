@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 
 export function Img({ src, className = 'art', pos, alt = '' }) {
+  if (!src) return <div className={className} aria-hidden="true" />;
   return <img className={className} src={src} alt={alt} loading="lazy" decoding="async" draggable="false" style={pos ? { objectPosition: pos } : undefined} />;
 }
 
@@ -16,10 +17,12 @@ export function Vid({ src, poster, play = true, className = 'art', pos }) {
   return (
     <>
       {poster && <img className={className} src={poster} alt="" style={pos ? { objectPosition: pos } : undefined} />}
-      <video
-        ref={ref} className={className + ' vid' + (ready ? ' ready' : '')} src={src} muted loop playsInline autoPlay preload="auto"
-        onPlaying={() => setReady(true)} style={pos ? { objectPosition: pos } : undefined}
-      />
+      {src && (
+        <video
+          ref={ref} className={className + ' vid' + (ready ? ' ready' : '')} src={src} muted loop playsInline autoPlay preload="auto"
+          onPlaying={() => setReady(true)} style={pos ? { objectPosition: pos } : undefined}
+        />
+      )}
     </>
   );
 }

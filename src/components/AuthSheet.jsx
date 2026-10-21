@@ -6,9 +6,9 @@ const EMAIL = /^[^\s@]{1,64}@[^\s@]{1,255}\.[^\s@]{2,}$/;
 
 function validate(mode, v) {
   const f = {};
-  if (mode === 'register' && (!v.name.trim() || v.name.trim().length > 40)) f.name = 'Enter your name (max 40 characters).';
-  if (!EMAIL.test(v.email.trim())) f.email = 'Enter a valid email address.';
-  if (mode === 'register' ? v.password.length < 8 : !v.password) f.password = mode === 'register' ? 'Use at least 8 characters.' : 'Enter your password.';
+  if (mode === 'register' && (!v.name.trim() || v.name.trim().length > 40)) f.name = 'Entre ton nom (40 caractères maximum).';
+  if (!EMAIL.test(v.email.trim())) f.email = 'Entre une adresse e-mail valide.';
+  if (mode === 'register' ? v.password.length < 8 : !v.password) f.password = mode === 'register' ? 'Utilise au moins 8 caractères.' : 'Entre ton mot de passe.';
   return f;
 }
 
@@ -80,32 +80,32 @@ export default function AuthSheet({ initialMode, onClose, onDone }) {
     <div className="sheet-wrap" onMouseDown={(e) => { if (e.target === e.currentTarget && !busy) onClose(); }}>
       <div className="sheet" role="dialog" aria-modal="true" aria-labelledby={uid + 't'} ref={box}>
         <div className="grab" aria-hidden="true" />
-        <button className="x" aria-label="Close" onClick={onClose} disabled={busy}><Icon n="close" /></button>
-        <h2 id={uid + 't'}>{reg ? 'Create your account' : 'Welcome back'}</h2>
-        <p className="s-sub">{reg ? 'Start your fitness journey in less than a minute.' : 'Log in to pick up where you left off.'}</p>
+        <button className="x" aria-label="Fermer" onClick={onClose} disabled={busy}><Icon n="close" /></button>
+        <h2 id={uid + 't'}>{reg ? 'Crée ton compte' : 'Content de te revoir'}</h2>
+        <p className="s-sub">{reg ? 'Commence ton parcours forme en moins d\'une minute.' : 'Connecte-toi pour reprendre là où tu t\'es arrêté.'}</p>
 
         <div className="seg" role="tablist">
-          <button role="tab" aria-selected={reg} className={reg ? 'on' : ''} onClick={() => switchMode('register')} type="button">Sign up</button>
-          <button role="tab" aria-selected={!reg} className={!reg ? 'on' : ''} onClick={() => switchMode('login')} type="button">Log in</button>
+          <button role="tab" aria-selected={reg} className={reg ? 'on' : ''} onClick={() => switchMode('register')} type="button">Inscription</button>
+          <button role="tab" aria-selected={!reg} className={!reg ? 'on' : ''} onClick={() => switchMode('login')} type="button">Connexion</button>
         </div>
 
         <form onSubmit={submit} noValidate>
           {reg && (
-            <Field id={uid + 'n'} label="Name" error={errs.name}>
-              <input id={uid + 'n'} value={v.name} onChange={set('name')} autoComplete="name" maxLength={40} aria-invalid={!!errs.name} aria-describedby={errs.name ? uid + 'n-e' : undefined} placeholder="Brie Larson" />
+            <Field id={uid + 'n'} label="Nom" error={errs.name}>
+              <input id={uid + 'n'} value={v.name} onChange={set('name')} autoComplete="name" maxLength={40} aria-invalid={!!errs.name} aria-describedby={errs.name ? uid + 'n-e' : undefined} placeholder="Ton nom" />
             </Field>
           )}
-          <Field id={uid + 'm'} label="Email" error={errs.email}>
-            <input id={uid + 'm'} type="email" value={v.email} onChange={set('email')} autoComplete="email" inputMode="email" aria-invalid={!!errs.email} aria-describedby={errs.email ? uid + 'm-e' : undefined} placeholder="you@example.com" />
+          <Field id={uid + 'm'} label="E-mail" error={errs.email}>
+            <input id={uid + 'm'} type="email" value={v.email} onChange={set('email')} autoComplete="email" inputMode="email" aria-invalid={!!errs.email} aria-describedby={errs.email ? uid + 'm-e' : undefined} placeholder="toi@exemple.com" />
           </Field>
-          <Field id={uid + 'p'} label="Password" error={errs.password}>
+          <Field id={uid + 'p'} label="Mot de passe" error={errs.password}>
             <div className="pw">
-              <input id={uid + 'p'} type={show ? 'text' : 'password'} value={v.password} onChange={set('password')} autoComplete={reg ? 'new-password' : 'current-password'} aria-invalid={!!errs.password} aria-describedby={errs.password ? uid + 'p-e' : undefined} placeholder={reg ? 'At least 8 characters' : 'Your password'} />
-              <button type="button" onClick={() => setShow(!show)} aria-label={show ? 'Hide password' : 'Show password'} aria-pressed={show}>{show ? 'Hide' : 'Show'}</button>
+              <input id={uid + 'p'} type={show ? 'text' : 'password'} value={v.password} onChange={set('password')} autoComplete={reg ? 'new-password' : 'current-password'} aria-invalid={!!errs.password} aria-describedby={errs.password ? uid + 'p-e' : undefined} placeholder={reg ? 'Au moins 8 caractères' : 'Ton mot de passe'} />
+              <button type="button" onClick={() => setShow(!show)} aria-label={show ? 'Masquer le mot de passe' : 'Afficher le mot de passe'} aria-pressed={show}>{show ? 'Masquer' : 'Afficher'}</button>
             </div>
           </Field>
           {formErr && <div className="form-err" role="alert">{formErr}</div>}
-          <button className="btn" type="submit" disabled={busy}>{busy ? 'Please wait…' : reg ? 'Create account' : 'Log in'}</button>
+          <button className="btn" type="submit" disabled={busy}>{busy ? 'Patiente…' : reg ? 'Créer mon compte' : 'Me connecter'}</button>
         </form>
       </div>
     </div>

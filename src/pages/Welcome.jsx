@@ -5,9 +5,10 @@ import { useAuth } from '../auth';
 import { useStore } from '../store';
 import { Vid } from '../components/Media';
 import AuthSheet from '../components/AuthSheet';
+import { assetUrl } from '../lib/media';
 
 const BASE = import.meta.env.BASE_URL;
-const asset = (p) => (p ? `${BASE}${p}` : undefined);
+const asset = (p) => assetUrl(p) || undefined;
 
 export default function Welcome() {
   const nav = useNavigate();
@@ -36,19 +37,20 @@ export default function Welcome() {
 
   return (
     <section className="onb">
-      {content ? <Vid src={asset(content.video)} poster={asset(content.poster)} pos="center 20%" /> : <div className="art skeleton" />}
-      <div className="shade" />
+      <div className="onb-art">
+        {content ? <Vid src={asset(content.video)} poster={asset(content.poster)} pos="center 20%" /> : <div className="art skeleton" />}
+      </div>
       <div className="txt">
         <div className="brand">{content ? <>{content.brand.slice(0, 3)}<span>{content.brand.slice(3)}</span></> : <>Fit<span>Life</span></>}</div>
 
         {error ? (
           <div className="state-box" role="alert">
-            <b>We couldn't load the page</b>
+            <b>Impossible de charger la page</b>
             <p>{error}</p>
-            <button className="btn" onClick={load}>Try again</button>
+            <button className="btn" onClick={load}>Réessayer</button>
           </div>
         ) : !content ? (
-          <div className="sk-lines" aria-busy="true" aria-label="Loading"><i /><i /><i /><b /></div>
+          <div className="sk-lines" aria-busy="true" aria-label="Chargement"><i /><i /><i /><b /></div>
         ) : (
           <>
             <h1>{content.titleLines.map((l, i) => <span key={i}>{l}{i < content.titleLines.length - 1 && <br />}</span>)}</h1>
@@ -57,13 +59,13 @@ export default function Welcome() {
               <button className="btn" disabled>…</button>
             ) : user ? (
               <>
-                <button className="btn" onClick={() => proceed(user)}>Continue as {first}</button>
-                <button className="link-btn" onClick={async () => { await logout(); notify('Logged out'); }}>Not {first}? Log out</button>
+                <button className="btn" onClick={() => proceed(user)}>Continuer en tant que {first}</button>
+                <button className="link-btn" onClick={async () => { await logout(); notify('Déconnecté'); }}>Pas {first} ? Se déconnecter</button>
               </>
             ) : (
               <>
                 <button className="btn" onClick={openSheet('register')}>{content.cta}</button>
-                <button className="link-btn" onClick={openSheet('login')}>I already have an account · <u>Log in</u></button>
+                <button className="link-btn" onClick={openSheet('login')}>J'ai déjà un compte · <u>Se connecter</u></button>
               </>
             )}
           </>

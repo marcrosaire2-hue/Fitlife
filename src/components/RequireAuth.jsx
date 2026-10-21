@@ -12,6 +12,14 @@ export default function RequireAuth({ children, fallback = null }) {
   return children;
 }
 
+/* Réserve une page aux administrateurs (le serveur refuse de toute façon les requêtes des autres). */
+export function RequireAdmin({ children }) {
+  const { user, loading } = useAuth();
+  if (loading) return null;
+  if (!user) return <Navigate to="/welcome" replace />;
+  return user.admin ? children : <Navigate to="/home" replace />;
+}
+
 /* Aligne les favoris locaux sur les marqueurs `fav` renvoyés par le serveur. */
 export function useSyncFavs(workouts) {
   const { dispatch } = useStore();

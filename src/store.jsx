@@ -2,7 +2,7 @@ import { createContext, useContext, useEffect, useMemo, useReducer, useCallback,
 
 const KEY = 'fitpulse.react.v1';
 const initial = {
-  name: 'Brie Larson', goals: [], favs: [], bookings: [], history: [],
+  name: '', goals: [], favs: [], history: [],
   onboarded: false, theme: 'lime', dailyGoal: 300,
 };
 
@@ -18,8 +18,6 @@ function reducer(s, a) {
     case 'setGoals': return { ...s, goals: a.goals, onboarded: true };
     case 'onboarded': return { ...s, onboarded: true };
     case 'toggleFav': return { ...s, favs: s.favs.includes(a.id) ? s.favs.filter((x) => x !== a.id) : [...s.favs, a.id] };
-    case 'book': return { ...s, bookings: [...s.bookings.filter((b) => b.trainer !== a.booking.trainer), a.booking] };
-    case 'unbook': return { ...s, bookings: s.bookings.filter((b) => b.trainer !== a.trainer) };
     case 'log': return { ...s, history: [...s.history, a.entry] };
     case 'name': return { ...s, name: a.name };
     case 'theme': return { ...s, theme: a.theme };
@@ -50,7 +48,7 @@ export function useStats() {
     const week = [...Array(7)].map((_, i) => {
       const d = new Date(); d.setDate(d.getDate() - (6 - i));
       const k = dayKey(d);
-      return { label: d.toLocaleDateString('en', { weekday: 'short' }).slice(0, 1), kcal: h.filter((e) => dayKey(e.date) === k).reduce((a, e) => a + e.kcal, 0), today: k === today };
+      return { label: d.toLocaleDateString('fr', { weekday: 'short' }).slice(0, 1), kcal: h.filter((e) => dayKey(e.date) === k).reduce((a, e) => a + e.kcal, 0), today: k === today };
     });
     let streak = 0;
     for (let i = 0; i < 365; i++) {

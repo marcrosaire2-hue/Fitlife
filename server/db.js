@@ -1,156 +1,104 @@
-import { DatabaseSync } from 'node:sqlite';
-import { mkdirSync, readFileSync } from 'node:fs';
+import { MongoClient } from 'mongodb';
+import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const here = dirname(fileURLToPath(import.meta.url));
-const file = process.env.DB_FILE || join(here, 'data', 'fitpulse.db');
-mkdirSync(dirname(file), { recursive: true });
-
-export const db = new DatabaseSync(file);
-db.exec(`
-  PRAGMA journal_mode = WAL;
-  PRAGMA foreign_keys = ON;
-  CREATE TABLE IF NOT EXISTS users (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT NOT NULL,
-    email TEXT NOT NULL UNIQUE COLLATE NOCASE,
-    password_hash TEXT NOT NULL,
-    created_at INTEGER NOT NULL
-  );
-  CREATE TABLE IF NOT EXISTS sessions (
-    token_hash TEXT PRIMARY KEY,
-    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    expires_at INTEGER NOT NULL
-  );
-  CREATE TABLE IF NOT EXISTS content (
-    key TEXT PRIMARY KEY,
-    value TEXT NOT NULL
-  );
-`);
-
-// migration : colonne « onboarded » (objectifs déjà choisis)
-if (!db.prepare('PRAGMA table_info(users)').all().some((c) => c.name === 'onboarded')) {
-  db.exec('ALTER TABLE users ADD COLUMN onboarded INTEGER NOT NULL DEFAULT 0');
-}
-db.exec(`
-  CREATE TABLE IF NOT EXISTS goals (
-    id TEXT PRIMARY KEY,
-    label TEXT NOT NULL,
-    photo TEXT NOT NULL,
-    position INTEGER NOT NULL
-  );
-  CREATE TABLE IF NOT EXISTS user_goals (
-    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    goal_id TEXT NOT NULL REFERENCES goals(id) ON DELETE CASCADE,
-    PRIMARY KEY (user_id, goal_id)
-  );
-`);
-/* ---------- catalogue (objectifs, cours, séances, coachs) ---------- */
-db.exec(`
-  CREATE TABLE IF NOT EXISTS courses (
-    id TEXT PRIMARY KEY, name TEXT NOT NULL, photo TEXT NOT NULL, position INTEGER NOT NULL
-  );
-  CREATE TABLE IF NOT EXISTS workouts (
-    id TEXT PRIMARY KEY,
-    course_id TEXT NOT NULL REFERENCES courses(id),
-    title TEXT NOT NULL, minutes INTEGER NOT NULL, kcal INTEGER NOT NULL, people INTEGER NOT NULL,
-    level TEXT NOT NULL, description TEXT NOT NULL, photo TEXT NOT NULL, video TEXT NOT NULL, position INTEGER NOT NULL
-  );
-  CREATE TABLE IF NOT EXISTS workout_goals (
-    workout_id TEXT NOT NULL REFERENCES workouts(id) ON DELETE CASCADE,
-    goal_id TEXT NOT NULL REFERENCES goals(id) ON DELETE CASCADE,
-    PRIMARY KEY (workout_id, goal_id)
-  );
-  CREATE TABLE IF NOT EXISTS exercises (
-    workout_id TEXT NOT NULL REFERENCES workouts(id) ON DELETE CASCADE,
-    position INTEGER NOT NULL, name TEXT NOT NULL, reps INTEGER NOT NULL, seconds INTEGER NOT NULL,
-    PRIMARY KEY (workout_id, position)
-  );
-  CREATE TABLE IF NOT EXISTS trainers (
-    id TEXT PRIMARY KEY, name TEXT NOT NULL, rate REAL NOT NULL, years INTEGER NOT NULL,
-    best INTEGER NOT NULL DEFAULT 0, bio TEXT NOT NULL, photo TEXT NOT NULL, position INTEGER NOT NULL
-  );
-  CREATE TABLE IF NOT EXISTS trainer_tags (
-    trainer_id TEXT NOT NULL REFERENCES trainers(id) ON DELETE CASCADE, tag TEXT NOT NULL,
-    PRIMARY KEY (trainer_id, tag)
-  );
-  /* ---------- données des utilisateurs ---------- */
-  CREATE TABLE IF NOT EXISTS favorites (
-    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    workout_id TEXT NOT NULL REFERENCES workouts(id) ON DELETE CASCADE,
-    created_at INTEGER NOT NULL,
-    PRIMARY KEY (user_id, workout_id)
-  );
-  CREATE TABLE IF NOT EXISTS workout_logs (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    workout_id TEXT NOT NULL REFERENCES workouts(id),
-    done_at INTEGER NOT NULL, seconds INTEGER NOT NULL, kcal INTEGER NOT NULL, pct REAL NOT NULL
-  );
-  CREATE INDEX IF NOT EXISTS idx_logs_user ON workout_logs(user_id, done_at);
-  CREATE TABLE IF NOT EXISTS bookings (
-    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    trainer_id TEXT NOT NULL REFERENCES trainers(id) ON DELETE CASCADE,
-    day TEXT NOT NULL, slot TEXT NOT NULL,
-    PRIMARY KEY (user_id, trainer_id)
-  );
-`);
-for (const [col, ddl] of [['daily_goal', 'INTEGER NOT NULL DEFAULT 300'], ['theme', "TEXT NOT NULL DEFAULT 'lime'"]]) {
-  if (!db.prepare('PRAGMA table_info(users)').all().some((c) => c.name === col)) db.exec(`ALTER TABLE users ADD COLUMN ${col} ${ddl}`);
+const uri = process.env.MONGODB_URI;
+if (!uri) {
+  console.error('MONGODB_URI is not set. Copy .env.example to .env and fill in your MongoDB connection string.');
+  process.exit(1);
 }
 
-db.exec(`
-  CREATE TABLE IF NOT EXISTS sessions_run (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    workout_id TEXT NOT NULL REFERENCES workouts(id),
-    status TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active','finished','abandoned')),
-    started_at INTEGER NOT NULL, updated_at INTEGER NOT NULL,
-    elapsed INTEGER NOT NULL DEFAULT 0, exercise_idx INTEGER NOT NULL DEFAULT 0,
-    finished_at INTEGER, kcal INTEGER, pct REAL
-  );
-  CREATE INDEX IF NOT EXISTS idx_run_user ON sessions_run(user_id, status);
-`);
-if (!db.prepare('PRAGMA table_info(workout_logs)').all().some((c) => c.name === 'session_id')) {
-  db.exec('ALTER TABLE workout_logs ADD COLUMN session_id INTEGER');
-}
+export const client = new MongoClient(uri, { serverSelectionTimeoutMS: 15000 });
+await client.connect();
+export const db = client.db(process.env.MONGODB_DB || 'fitpulse');
 
+// comptes et données utilisateur
+export const users = db.collection('users');
+export const sessions = db.collection('sessions');          // sessions de connexion (cookie)
+export const favorites = db.collection('favorites');
+export const logs = db.collection('workout_logs');          // séances terminées
+export const runs = db.collection('sessions_run');          // séances en cours / terminées / abandonnées
+export const bookings = db.collection('bookings');
+export const posts = db.collection('posts');                // résultats publiés dans la communauté
+export const challenges = db.collection('challenges');      // défis créés par les utilisateurs ou l'admin
+export const members = db.collection('challenge_members');  // participants aux défis
+export const events = db.collection('events');              // événements à date créés par l'admin
+export const eventMembers = db.collection('event_members'); // inscriptions aux événements
+export const friendships = db.collection('friendships');    // connexions entre utilisateurs (demandes + amis)
+export const blocks = db.collection('blocks');
+export const conversations = db.collection('conversations'); // privées, groupes et chat de communauté
+export const messages = db.collection('messages');
+export const communities = db.collection('communities');
+export const communityMembers = db.collection('community_members');
+export const calls = db.collection('calls');                // appels vidéo de groupe et lives programmés
+export const activities = db.collection('activities');      // marche / course : durée, distance, pas, tracé GPS
+// catalogue
+export const goals = db.collection('goals');
+export const courses = db.collection('courses');
+export const workouts = db.collection('workouts');          // exercices et objectifs intégrés au document
+export const trainers = db.collection('trainers');          // coachs : vide tant que de vrais coachs ne sont pas ajoutés
+export const content = db.collection('content');
+
+await Promise.all([
+  users.createIndex({ email: 1 }, { unique: true }),
+  sessions.createIndex({ expires_at: 1 }),
+  sessions.createIndex({ user_id: 1 }),
+  favorites.createIndex({ user_id: 1, workout_id: 1 }, { unique: true }),
+  logs.createIndex({ user_id: 1, done_at: -1 }),
+  logs.createIndex({ session_id: 1 }, { unique: true, partialFilterExpression: { session_id: { $exists: true } } }),
+  runs.createIndex({ user_id: 1, status: 1 }),
+  bookings.createIndex({ user_id: 1, trainer_id: 1 }, { unique: true }),
+  activities.createIndex({ user_id: 1, started_at: -1 }),
+  events.createIndex({ starts_at: 1 }),
+  eventMembers.createIndex({ event_id: 1, user_id: 1 }, { unique: true }),
+  eventMembers.createIndex({ user_id: 1 }),
+  friendships.createIndex({ pair: 1 }, { unique: true }),
+  friendships.createIndex({ a: 1 }),
+  friendships.createIndex({ b: 1 }),
+  blocks.createIndex({ blocker: 1, blocked: 1 }, { unique: true }),
+  blocks.createIndex({ blocked: 1 }),
+  conversations.createIndex({ direct_key: 1 }, { unique: true, partialFilterExpression: { direct_key: { $type: 'string' } } }),
+  conversations.createIndex({ members: 1, last_message_at: -1 }),
+  conversations.createIndex({ community_id: 1 }),
+  messages.createIndex({ conversation_id: 1, created_at: -1 }),
+  messages.createIndex({ sender_id: 1 }),
+  communities.createIndex({ visibility: 1, created_at: -1 }),
+  communities.createIndex({ owner_id: 1 }),
+  communityMembers.createIndex({ community_id: 1, user_id: 1 }, { unique: true }),
+  communityMembers.createIndex({ user_id: 1, status: 1 }),
+  calls.createIndex({ conversation_id: 1, created_at: -1 }),
+  calls.createIndex({ community_id: 1, starts_at: 1 }),
+  posts.createIndex({ created_at: -1 }),
+  posts.createIndex({ activity_id: 1 }, { unique: true }),
+  posts.createIndex({ user_id: 1 }),
+  challenges.createIndex({ ends_at: -1 }),
+  members.createIndex({ challenge_id: 1, user_id: 1 }, { unique: true }),
+  members.createIndex({ user_id: 1 }),
+  workouts.createIndex({ course_id: 1, position: 1 }),
+]);
+
+/* ---------- catalogue : objectifs, cours, séances (ajoutés seulement s'ils n'existent pas) ---------- */
 const catalog = JSON.parse(readFileSync(join(here, 'catalog.json'), 'utf8'));
-db.exec('BEGIN');
-try {
-  const g = db.prepare('INSERT OR IGNORE INTO goals (id, label, photo, position) VALUES (?, ?, ?, ?)');
-  catalog.goals.forEach((x, i) => g.run(x.id, x.label, x.photo, i));
-  const c = db.prepare('INSERT OR IGNORE INTO courses (id, name, photo, position) VALUES (?, ?, ?, ?)');
-  catalog.courses.forEach((x, i) => c.run(x.id, x.name, x.photo, i));
-  const w = db.prepare('INSERT OR IGNORE INTO workouts (id, course_id, title, minutes, kcal, people, level, description, photo, video, position) VALUES (?,?,?,?,?,?,?,?,?,?,?)');
-  const wg = db.prepare('INSERT OR IGNORE INTO workout_goals (workout_id, goal_id) VALUES (?, ?)');
-  const ex = db.prepare('INSERT OR IGNORE INTO exercises (workout_id, position, name, reps, seconds) VALUES (?,?,?,?,?)');
-  catalog.workouts.forEach((x, i) => {
-    w.run(x.id, x.course, x.title, x.min, x.kcal, x.people, x.level, x.desc, x.photo, x.video, i);
-    x.goals.forEach((gid) => wg.run(x.id, gid));
-    x.ex.forEach(([n, r, s], p) => ex.run(x.id, p, n, r, s));
-  });
-  const t = db.prepare('INSERT OR IGNORE INTO trainers (id, name, rate, years, best, bio, photo, position) VALUES (?,?,?,?,?,?,?,?)');
-  const tt = db.prepare('INSERT OR IGNORE INTO trainer_tags (trainer_id, tag) VALUES (?, ?)');
-  catalog.trainers.forEach((x, i) => { t.run(x.id, x.name, x.rate, x.yrs, x.best ? 1 : 0, x.bio, x.photo, i); x.tags.forEach((tag) => tt.run(x.id, tag)); });
-  db.exec('COMMIT');
-} catch (e) { db.exec('ROLLBACK'); throw e; }
+const seed = (col, docs) => docs.length && col.bulkWrite(docs.map((d) => ({ updateOne: { filter: { _id: d._id }, update: { $setOnInsert: d }, upsert: true } })));
+await seed(goals, catalog.goals.map((x, i) => ({ _id: x.id, label: x.label, photo: x.photo, position: i })));
+await seed(courses, catalog.courses.map((x, i) => ({ _id: x.id, name: x.name, photo: x.photo, position: i })));
+await seed(workouts, catalog.workouts.map((x, i) => ({
+  _id: x.id, course_id: x.course, title: x.title, minutes: x.min, kcal: x.kcal, level: x.level,
+  description: x.desc || '', photo: x.photo, video: x.video, position: i, goals: x.goals,
+  exercises: x.ex.map(([name, reps, seconds]) => ({ name, reps, seconds })),
+})));
 
 // contenu de la page de bienvenue : modifiable en base sans toucher au front
 const WELCOME = {
   brand: 'FitLife',
-  titleLines: ['Push', 'Yourself', 'Harder'],
-  subtitle: 'Achieve your fitness goals with our innovative fitness app.',
-  cta: 'Get started',
+  titleLines: ['Prêt', 'à bouger ?'],
+  subtitle: 'Fitness & santé : atteins tes objectifs avec notre application.',
+  cta: "C'est parti",
   video: 'media/videos/weights.mp4',
   poster: 'media/photos/17210041.jpg',
 };
-db.prepare('INSERT OR IGNORE INTO content (key, value) VALUES (?, ?)').run('welcome', JSON.stringify(WELCOME));
-// renommage de la marque : met à jour le contenu déjà enregistré
-db.prepare("UPDATE content SET value = json_set(value, '$.brand', ?) WHERE key = 'welcome' AND json_extract(value, '$.brand') = 'FitPulse'").run(WELCOME.brand);
+await content.updateOne({ _id: 'welcome' }, { $setOnInsert: { value: WELCOME } }, { upsert: true });
 
-export const getContent = (key) => {
-  const row = db.prepare('SELECT value FROM content WHERE key = ?').get(key);
-  return row ? JSON.parse(row.value) : null;
-};
+export const getContent = async (key) => (await content.findOne({ _id: key }))?.value ?? null;

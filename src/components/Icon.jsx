@@ -17,6 +17,16 @@ const P = {
   close: <path d="M6 6l12 12M18 6L6 18" />,
   flame: <path d="M12 3c1 4 6 6 6 11a6 6 0 0 1-12 0c0-2.500 1.200-4 2.500-5 .2 2 1.200 3 2.500 3-.5-3 .5-6 1-9z" fill="currentColor" />,
   trophy: <path d="M7 4h10v5a5 5 0 0 1-10 0zM7 6H4v2a3 3 0 0 0 3 3M17 6h3v2a3 3 0 0 1-3 3M12 14v4M8 21h8" />,
+  route: <><circle cx="6" cy="18" r="2.500" /><circle cx="18" cy="6" r="2.500" /><path d="M8.500 18H14a3 3 0 0 0 0-6h-4a3 3 0 0 1 0-6h5.500" /></>,
+  pin: <><path d="M12 21s-6-5.500-6-10a6 6 0 0 1 12 0c0 4.500-6 10-6 10z" /><circle cx="12" cy="11" r="2.200" /></>,
+  steps: <><path d="M8 3c2 0 3 2 3 5s-1 4-3 4-3-1-3-3 1-6 3-6z" /><path d="M16 11c2 0 3 2 3 5s-1 5-3 5-3-1-3-3 1-7 3-7z" /></>,
+  bolt: <path d="M13 3L5 14h6l-1 7 8-11h-6z" />,
+  chat: <path d="M4 5h16v11H9l-5 4z" />,
+  video: <><rect x="3" y="6" width="12" height="12" rx="2" /><path d="M15 10l6-3v10l-6-3z" /></>,
+  send: <path d="M4 12l16-8-6 16-2-7z" />,
+  plus: <path d="M12 5v14M5 12h14" />,
+  mic: <><rect x="9" y="3" width="6" height="11" rx="3" /><path d="M5 11a7 7 0 0 0 14 0M12 18v3" /></>,
+  hangup: <path d="M3 14c5-5 13-5 18 0l-2 3-3-1.500v-3c-3-1-6-1-6 0v3L5 17z" />,
   edit: <path d="M4 20h4L19 9l-4-4L4 16zM14 6l4 4" />,
 };
 export default function Icon({ n, className = '' }) {

@@ -3,11 +3,13 @@ import { Link, Navigate, useParams } from 'react-router-dom';
 import { api } from '../api';
 import { Vid } from '../components/Media';
 import Icon from '../components/Icon';
+import { assetUrl, embedUrl, videoKind } from '../lib/media';
+import { levelFr } from '../lib/labels';
 import { BackBtn, Fav, WorkoutRow } from '../components/ui';
 import { useSyncFavs } from '../components/RequireAuth';
 
 const BASE = import.meta.env.BASE_URL;
-const withBase = (o) => ({ ...o, photo: `${BASE}${o.photo}` });
+const withBase = (o) => ({ ...o, photo: assetUrl(o.photo) });
 
 export function Workout() {
   const { id } = useParams();
@@ -19,7 +21,7 @@ export function Workout() {
     setError('');
     api.workout(id)
       .then((d) => setData({
-        w: { ...withBase(d.workout), video: `${BASE}${d.workout.video}` },
+        w: { ...withBase(d.workout), video: videoKind(d.workout.video) === 'file' ? assetUrl(d.workout.video) : '', embed: embedUrl(d.workout.video) },
         related: d.related.map(withBase),
         mine: d.mine,
       }))
@@ -33,13 +35,13 @@ export function Workout() {
     return (
       <section className="page narrow">
         <div className="topbar"><BackBtn /><span /><span className="sp" /></div>
-        <div className="state-box center" role="alert"><b>We couldn't load this workout</b><p>{error}</p><button className="btn" onClick={load}>Try again</button></div>
+        <div className="state-box center" role="alert"><b>Impossible de charger cette séance</b><p>{error}</p><button className="btn" onClick={load}>Réessayer</button></div>
       </section>
     );
   }
   if (!data) {
     return (
-      <section className="page detail" aria-busy="true" aria-label="Loading">
+      <section className="page detail" aria-busy="true" aria-label="Chargement">
         <div className="det-hero"><div className="art skeleton" /><div className="tb"><BackBtn glass /></div></div>
         <div className="det"><i className="sk-t" style={{ width: 160, height: 12 }} /><i className="sk-t" style={{ width: 260, height: 34, margin: '12px 0' }} /><i className="sk-t" style={{ width: '100%', height: 70 }} /></div>
       </section>
@@ -52,25 +54,31 @@ export function Workout() {
         <Vid src={w.video} poster={w.photo} pos="center 25%" />
         <div className="shade" />
         <div className="tb"><BackBtn glass /><Fav id={w.id} className="glass" /></div>
-        <Link to={`/session/${w.id}`} className="play" aria-label="Play"><Icon n="play" /></Link>
+        <Link to={`/session/${w.id}`} className="play" aria-label="Lancer"><Icon n="play" /></Link>
       </div>
       <div className="det">
-        <small className="crumb">{w.course.name} · {w.level} · {w.people} people training</small>
+        <small className="crumb">{w.course.name} · {levelFr(w.level)}</small>
         <h1>{w.title}</h1>
-        <p>{w.desc}</p>
+        {w.desc && <p>{w.desc}</p>}
         <div className="pills">
-          <div className="pill"><i><Icon n="clock" /></i><div><small>Time</small><b>{w.min} min</b></div></div>
-          <div className="pill"><i><Icon n="fire" /></i><div><small>Burn</small><b>{w.kcal} kcal</b></div></div>
+          <div className="pill"><i><Icon n="clock" /></i><div><small>Durée</small><b>{w.min} min</b></div></div>
+          <div className="pill"><i><Icon n="fire" /></i><div><small>Dépense</small><b>{w.kcal} kcal</b></div></div>
         </div>
-        {mine.count > 0 && (
-          <p className="done-note"><Icon n="check" /> You've done this {mine.count} time{mine.count > 1 ? 's' : ''} · last on {new Date(mine.last).toLocaleDateString('en', { month: 'short', day: 'numeric' })}</p>
+        {w.embed && (
+          <div className="player">
+            <iframe src={w.embed} title="Vidéo de la séance" loading="lazy" allowFullScreen referrerPolicy="strict-origin-when-cross-origin"
+              allow="accelerometer; encrypted-media; gyroscope; picture-in-picture; fullscreen" />
+          </div>
         )}
-        <h3 className="h3">Exercises</h3>
+        {mine.count > 0 && (
+          <p className="done-note"><Icon n="check" /> Tu as déjà fait cette séance {mine.count} fois · dernière fois le {new Date(mine.last).toLocaleDateString('fr', { month: 'short', day: 'numeric' })}</p>
+        )}
+        <h3 className="h3">Exercices</h3>
         <div className="ex">{w.exercises.map((e, i) => <div key={e.name}><em>{i + 1}</em>{e.name}<span>x{e.reps}</span></div>)}</div>
-        <Link to={`/session/${w.id}`} className="btn">Let's workout</Link>
+        <Link to={`/session/${w.id}`} className="btn">C'est parti</Link>
         {related.length > 0 && (
           <>
-            <h3 className="h3" style={{ marginTop: 26 }}>More in {w.course.name}</h3>
+            <h3 className="h3" style={{ marginTop: 26 }}>Plus dans {w.course.name}</h3>
             <div className="lst grid">{related.map((r) => <WorkoutRow key={r.id} w={r} />)}</div>
           </>
         )}

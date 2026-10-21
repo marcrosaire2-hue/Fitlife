@@ -5,7 +5,8 @@ import { useAuth } from '../auth';
 import { useStore } from '../store';
 import { Img } from '../components/Media';
 import Icon from '../components/Icon';
-import { BackBtn } from '../components/ui';
+import { assetUrl } from '../lib/media';
+import { BackBtn, Empty } from '../components/ui';
 
 const BASE = import.meta.env.BASE_URL;
 
@@ -33,14 +34,14 @@ export function Goals() {
   const toggle = (id) => setSelected((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id]));
 
   const next = async () => {
-    if (!selected.length) return notify('Pick at least one goal');
+    if (goals?.length && !selected.length) return notify('Choisis au moins un objectif');
     if (saving) return;
     setSaving(true);
     try {
       const d = await api.saveGoals(selected);
       setUser(d.user);
       dispatch({ type: 'setGoals', goals: d.selected });
-      if (wasOnboarded) { notify('Goals updated'); nav(-1); } else nav('/home', { replace: true });
+      if (wasOnboarded) { notify('Objectifs mis à jour'); nav(-1); } else nav(user?.avatar ? '/home' : '/photo', { replace: true });
     } catch (e) {
       if (e.status === 401) { setUser(null); nav('/welcome', { replace: true }); return; }
       notify(e.message);
@@ -51,27 +52,29 @@ export function Goals() {
   return (
     <section className="goals page narrow">
       <div className="topbar"><BackBtn /><span /><span className="sp" /></div>
-      <h1 className="h1">What's your fitness goal?</h1>
-      <p className="sub">{selected.length ? `${selected.length} selected` : 'Choose one or more'}</p>
+      <h1 className="h1">Quel est ton objectif ?</h1>
+      <p className="sub">{goals && !goals.length ? 'Aucun objectif disponible pour le moment' : selected.length ? `${selected.length} sélectionné${selected.length > 1 ? 's' : ''}` : 'Choisis un ou plusieurs objectifs'}</p>
 
       {error ? (
         <div className="state-box center" role="alert">
-          <b>We couldn't load your goals</b>
+          <b>Impossible de charger tes objectifs</b>
           <p>{error}</p>
-          <button className="btn" onClick={load}>Try again</button>
+          <button className="btn" onClick={load}>Réessayer</button>
         </div>
       ) : !goals ? (
-        <div className="goal-grid" aria-busy="true" aria-label="Loading goals">
+        <div className="goal-grid" aria-busy="true" aria-label="Chargement des objectifs">
           {[...Array(9)].map((_, i) => <div key={i} className="goal"><span className="c skeleton" /><i className="sk-t" /></div>)}
         </div>
+      ) : !goals.length ? (
+        <Empty>Aucun objectif n'a encore été ajouté.</Empty>
       ) : (
-        <div className="goal-grid" role="group" aria-label="Fitness goals">
+        <div className="goal-grid" role="group" aria-label="Objectifs">
           {goals.map((g) => {
             const on = selected.includes(g.id);
             return (
               <button key={g.id} className={'goal' + (on ? ' sel' : '')} aria-pressed={on} onClick={() => toggle(g.id)}>
                 <span className="c">
-                  <Img src={`${BASE}${g.photo}`} pos="center 25%" />
+                  <Img src={assetUrl(g.photo)} pos="center 25%" />
                   <span className="chk"><Icon n="check" /></span>
                 </span>
                 {g.label}
@@ -80,7 +83,7 @@ export function Goals() {
           })}
         </div>
       )}
-      <div className="dock"><button className="btn" onClick={next} disabled={saving || !goals}>{saving ? 'Saving…' : wasOnboarded ? 'Save' : 'Next'}</button></div>
+      <div className="dock"><button className="btn" onClick={next} disabled={saving || !goals}>{saving ? 'Enregistrement…' : wasOnboarded ? 'Enregistrer' : 'Suivant'}</button></div>
     </section>
   );
 }

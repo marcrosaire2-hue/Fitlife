@@ -2,21 +2,24 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Navigate, useParams } from 'react-router-dom';
 import { api } from '../api';
 import { useSyncFavs } from '../components/RequireAuth';
-import { BackBtn, CourseRow, Empty, SearchBox, WorkoutRow } from '../components/ui';
+import { BackBtn, CourseTile, Empty, SearchBox, WorkoutRow } from '../components/ui';
 import { Img } from '../components/Media';
+import { assetUrl } from '../lib/media';
+import { levelFr } from '../lib/labels';
 
 const BASE = import.meta.env.BASE_URL;
-const withBase = (o) => ({ ...o, photo: `${BASE}${o.photo}` });
+const withBase = (o) => ({ ...o, photo: assetUrl(o.photo) });
 
 function ErrorBox({ title, message, onRetry }) {
   return (
     <div className="state-box center" role="alert">
       <b>{title}</b><p>{message}</p>
-      <button className="btn" onClick={onRetry}>Try again</button>
+      <button className="btn" onClick={onRetry}>Réessayer</button>
     </div>
   );
 }
-const Rows = ({ n }) => <div className="lst grid px" aria-busy="true" aria-label="Loading">{[...Array(n)].map((_, i) => <div key={i} className="row skeleton" />)}</div>;
+const Rows = ({ n }) => <div className="lst grid px" aria-busy="true" aria-label="Chargement">{[...Array(n)].map((_, i) => <div key={i} className="row skeleton" />)}</div>;
+const Tiles = ({ n }) => <div className="xgrid" aria-busy="true" aria-label="Chargement">{[...Array(n)].map((_, i) => <div key={i} className="skeleton" />)}</div>;
 
 export function Courses() {
   const [q, setQ] = useState('');
@@ -42,19 +45,19 @@ export function Courses() {
 
   return (
     <section className="page">
-      <div className="topbar"><BackBtn /><h2>Courses</h2><span className="sp" /></div>
-      <div className="px"><SearchBox value={q} onChange={setQ} placeholder="Search a course" /></div>
+      <div className="topbar"><BackBtn /><h2>Explorer</h2><span className="sp" /></div>
+      <div className="px"><SearchBox value={q} onChange={setQ} placeholder="Rechercher un cours" /></div>
       <div style={{ marginTop: 14 }}>
-        {error ? <ErrorBox title="We couldn't load the courses" message={error} onRetry={() => load(q)} />
-          : !courses ? <Rows n={5} />
-          : <div className="lst grid px" aria-live="polite">{courses.length ? courses.map((c) => <CourseRow key={c.id} c={c} />) : <Empty>No course found.</Empty>}</div>}
+        {error ? <ErrorBox title="Impossible de charger les cours" message={error} onRetry={() => load(q)} />
+          : !courses ? <Tiles n={4} />
+          : <div className="xgrid" aria-live="polite">{courses.length ? courses.map((c) => <CourseTile key={c.id} c={c} />) : <Empty>Aucun cours trouvé.</Empty>}</div>}
       </div>
     </section>
   );
 }
 
 const LEVELS = ['All', 'Beginner', 'Intermediate', 'Advanced'];
-const SORTS = [['default', 'Default'], ['kcal', 'Most calories'], ['time', 'Shortest']];
+const SORTS = [['default', 'Par défaut'], ['kcal', 'Plus de calories'], ['time', 'Plus courtes']];
 
 export function CourseDetail() {
   const { id } = useParams();
@@ -87,18 +90,18 @@ export function CourseDetail() {
         <div className="tb"><BackBtn glass /></div>
         <h1>{c?.name ?? ''}</h1>
       </div>
-      <div className="chips px" role="group" aria-label="Level">
-        {LEVELS.map((l) => <button key={l} className={'chip' + (level === l ? ' on' : '')} aria-pressed={level === l} onClick={() => setLevel(l)}>{l}</button>)}
+      <div className="chips px" role="group" aria-label="Niveau">
+        {LEVELS.map((l) => <button key={l} className={'chip' + (level === l ? ' on' : '')} aria-pressed={level === l} onClick={() => setLevel(l)}>{levelFr(l)}</button>)}
       </div>
-      <div className="chips px" role="group" aria-label="Sort">
+      <div className="chips px" role="group" aria-label="Tri">
         {SORTS.map(([k, l]) => <button key={k} className={'chip small' + (sort === k ? ' on' : '')} aria-pressed={sort === k} onClick={() => setSort(k)}>{l}</button>)}
       </div>
       <div style={{ marginTop: 12, opacity: busy && data ? 0.55 : 1, transition: 'opacity .2s' }}>
-        {error ? <ErrorBox title="We couldn't load this course" message={error} onRetry={load} />
+        {error ? <ErrorBox title="Impossible de charger ce cours" message={error} onRetry={load} />
           : !data ? <Rows n={3} />
           : <div className="lst grid px" aria-live="polite">
               {data.workouts.length ? data.workouts.map((w) => <WorkoutRow key={w.id} w={w} />)
-                : <Empty>{data.total ? 'No workout for this level yet.' : 'No workout in this course yet.'}</Empty>}
+                : <Empty>{data.total ? 'Aucune séance pour ce niveau pour le moment.' : 'Aucune séance dans ce cours pour le moment.'}</Empty>}
             </div>}
       </div>
     </section>

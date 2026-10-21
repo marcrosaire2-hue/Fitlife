@@ -5,11 +5,12 @@ import { useStore } from '../store';
 import { SONGS } from '../data';
 import { Img, Vid } from '../components/Media';
 import Icon from '../components/Icon';
+import { assetUrl, videoKind } from '../lib/media';
 import { BackBtn, Ring, WorkoutRow } from '../components/ui';
 import { useSyncFavs } from '../components/RequireAuth';
 
 const BASE = import.meta.env.BASE_URL;
-const withBase = (o) => ({ ...o, photo: `${BASE}${o.photo}` });
+const withBase = (o) => ({ ...o, photo: assetUrl(o.photo) });
 const pad = (n) => String(n).padStart(2, '0');
 
 export function Session() {
@@ -36,7 +37,7 @@ export function Session() {
     setError('');
     Promise.all([api.workout(id), api.startSession(id)])
       .then(([d, s]) => {
-        setW({ ...d.workout, video: `${BASE}${d.workout.video}`, photo: `${BASE}${d.workout.photo}` });
+        setW({ ...d.workout, video: videoKind(d.workout.video) === 'file' ? assetUrl(d.workout.video) : '', photo: assetUrl(d.workout.photo) });
         setSid(s.session.id);
         setT(s.session.elapsed); setExIdx(s.session.exerciseIdx); setInEx(0);
         if (s.session.resumed) { setResumed(true); setRun(false); }
@@ -91,7 +92,7 @@ export function Session() {
   }, [inEx, exIdx, w, finishing, finish]);
 
   const quit = async () => {
-    if (t >= 5 && !window.confirm('Quit this workout without saving?')) return;
+    if (t >= 5 && !window.confirm('Quitter cette séance sans l\'enregistrer ?')) return;
     over.current = true;
     if (sid) api.abandonSession(sid).catch(() => {});
     nav(-1);
@@ -102,13 +103,13 @@ export function Session() {
     return (
       <section className="page narrow">
         <div className="topbar"><BackBtn /><span /><span className="sp" /></div>
-        <div className="state-box center" role="alert"><b>We couldn't start the workout</b><p>{error}</p><button className="btn" onClick={start}>Try again</button></div>
+        <div className="state-box center" role="alert"><b>Impossible de démarrer la séance</b><p>{error}</p><button className="btn" onClick={start}>Réessayer</button></div>
       </section>
     );
   }
   if (!w) {
     return (
-      <section className="sess" aria-busy="true" aria-label="Loading"><div className="art skeleton" /><div className="shade" /></section>
+      <section className="sess" aria-busy="true" aria-label="Chargement"><div className="art skeleton" /><div className="shade" /></section>
     );
   }
 
@@ -123,25 +124,25 @@ export function Session() {
       <Vid src={w.video} poster={w.photo} play={run} pos="center 30%" />
       <div className="shade" />
       <div className="top">
-        <button className="icon-btn glass back" onClick={quit} aria-label="Back"><Icon n="back" /></button>
+        <button className="icon-btn glass back" onClick={quit} aria-label="Retour"><Icon n="back" /></button>
         <div className="chev"><i /><i /></div>
-        <div className="timer" role="timer" aria-label="Elapsed time">{pad(Math.floor(t / 60))}<em>:</em>{pad(t % 60)}</div>
+        <div className="timer" role="timer" aria-label="Temps écoulé">{pad(Math.floor(t / 60))}<em>:</em>{pad(t % 60)}</div>
         <div className="name">x{e.reps} {e.name}</div>
-        <div className="count">{Math.max(0, e.seconds - inEx)}s left · exercise {exIdx + 1}/{exs.length}</div>
+        <div className="count">{Math.max(0, e.seconds - inEx)} s restantes · exercice {exIdx + 1}/{exs.length}</div>
         <div className="prog"><i style={{ width: `${Math.min(100, (t / total) * 100)}%` }} /></div>
-        {resumed && !run && <div className="resume-note">Welcome back — your workout is paused at {pad(Math.floor(t / 60))}:{pad(t % 60)}</div>}
+        {resumed && !run && <div className="resume-note">Content de te revoir — ta séance est en pause à {pad(Math.floor(t / 60))}:{pad(t % 60)}</div>}
       </div>
       <div className="ctrls">
         <div className="big">
-          <button onClick={prev} disabled={exIdx === 0 || finishing}>Previous</button>
-          <button onClick={skip} disabled={finishing}>{exIdx < exs.length - 1 ? 'Next exercise' : 'Last one'}</button>
-          <button className="fin" onClick={finish} disabled={finishing}>{finishing ? 'Saving…' : 'Finish'}</button>
+          <button onClick={prev} disabled={exIdx === 0 || finishing}>Précédent</button>
+          <button onClick={skip} disabled={finishing}>{exIdx < exs.length - 1 ? 'Exercice suivant' : 'Dernier'}</button>
+          <button className="fin" onClick={finish} disabled={finishing}>{finishing ? 'Enregistrement…' : 'Terminer'}</button>
         </div>
         <div className="bar">
           <div className="art-m"><Icon n="music" /></div>
           <div className="tt">{SONGS[song][0]}<small>{SONGS[song][1]}</small></div>
-          <button className="sk" aria-label="Next song" onClick={() => setSong((song + 1) % SONGS.length)}><Icon n="next" /></button>
-          <button className="pp" aria-label={run ? 'Pause' : 'Resume'} onClick={() => setRun(!run)} disabled={finishing}><Icon n={run ? 'pause' : 'play'} /></button>
+          <button className="sk" aria-label="Titre suivant" onClick={() => setSong((song + 1) % SONGS.length)}><Icon n="next" /></button>
+          <button className="pp" aria-label={run ? 'Pause' : 'Reprendre'} onClick={() => setRun(!run)} disabled={finishing}><Icon n={run ? 'pause' : 'play'} /></button>
         </div>
       </div>
     </section>
@@ -166,43 +167,43 @@ export function Summary() {
   useSyncFavs(d?.next);
 
   if (missing) return <Navigate to="/home" replace />;
-  if (error) return <section className="page narrow summary"><div className="state-box center" role="alert"><b>We couldn't load your results</b><p>{error}</p><button className="btn" onClick={load}>Try again</button></div></section>;
-  if (!d) return <section className="page narrow summary" aria-busy="true" aria-label="Loading"><div className="trophy skeleton" /></section>;
+  if (error) return <section className="page narrow summary"><div className="state-box center" role="alert"><b>Impossible de charger tes résultats</b><p>{error}</p><button className="btn" onClick={load}>Réessayer</button></div></section>;
+  if (!d) return <section className="page narrow summary" aria-busy="true" aria-label="Chargement"><div className="trophy skeleton" /></section>;
 
   const { session: s, today, totals, next } = d;
   const mins = Math.max(1, Math.round(s.seconds / 60));
   const goalPct = Math.min(100, Math.round((today.kcal / today.goal) * 100));
   const share = async () => {
-    const text = `I just finished ${s.workout.title} on FitLife: ${s.kcal} kcal in ${mins} min!`;
+    const text = `Je viens de terminer ${s.workout.title} sur FitLife : ${s.kcal} kcal en ${mins} min !`;
     try {
       if (navigator.share) await navigator.share({ text });
-      else { await navigator.clipboard.writeText(text); notify('Copied to clipboard'); }
+      else { await navigator.clipboard.writeText(text); notify('Copié dans le presse-papiers'); }
     } catch { /* partage annulé */ }
   };
 
   return (
     <section className="page narrow summary">
-      <div className="trophy"><Icon n="trophy" /></div>
-      <h1 className="h1">Workout complete!</h1>
-      <p className="sub">{s.workout.title}{s.newBest && s.timesDone > 1 ? ' · new personal best 🎉' : ''}</p>
+      <div className="trophy"><Icon n="check" /></div>
+      <h1 className="h1">Félicitations !</h1>
+      <p className="sub">{s.workout.title}{s.newBest && s.timesDone > 1 ? ' · nouveau record personnel 🎉' : ''}</p>
       <div className="stats">
-        <div><b>{s.kcal}</b><small>Kcal burned</small></div>
+        <div><b>{s.kcal}</b><small>kcal brûlées</small></div>
         <div><b>{mins}</b><small>Minutes</small></div>
-        <div><b>{Math.round(s.pct * 100)}%</b><small>Completed</small></div>
+        <div><b>{Math.round(s.pct * 100)}%</b><small>Réalisé</small></div>
       </div>
       <div className="today sum-today">
         <Ring value={today.kcal} max={today.goal}><b>{goalPct}%</b></Ring>
         <div className="today-t">
-          <b>Today's goal</b>
+          <b>Objectif du jour</b>
           <span>{today.kcal} / {today.goal} kcal</span>
-          <small><Icon n="flame" /> {totals.streak} day streak · {totals.workouts} workouts</small>
+          <small><Icon n="flame" /> {totals.streak} {totals.streak === 1 ? 'jour' : 'jours'} d'affilée · {totals.workouts} {totals.workouts === 1 ? 'séance' : 'séances'}</small>
         </div>
       </div>
-      <button className="btn" onClick={() => nav('/home', { replace: true })}>Back to home</button>
-      <button className="btn ghost" onClick={share}>Share result</button>
+      <button className="btn" onClick={() => nav('/home', { replace: true })}>Terminer</button>
+      <button className="btn ghost" onClick={share}>Partager mon résultat</button>
       {next.length > 0 && (
         <>
-          <h3 className="h3 left">Up next</h3>
+          <h3 className="h3 left">À suivre</h3>
           <div className="lst grid left">{next.map((r) => <WorkoutRow key={r.id} w={r} />)}</div>
         </>
       )}

@@ -2,10 +2,10 @@ import { Link, useNavigate } from 'react-router-dom';
 import Icon from './Icon';
 import { Img } from './Media';
 import { useStore } from '../store';
-import { WORKOUTS } from '../data';
 import { api } from '../api';
+import { levelFr } from '../lib/labels';
 
-export function BackBtn({ to, glass, label = 'Back' }) {
+export function BackBtn({ to, glass, label = 'Retour' }) {
   const nav = useNavigate();
   return (
     <button className={'icon-btn' + (glass ? ' glass' : '')} aria-label={label} onClick={() => (to ? nav(to) : nav(-1))}>
@@ -21,11 +21,11 @@ export function Fav({ id, className = '' }) {
     <button
       className={`fav ${on ? 'on' : ''} ${className}`}
       aria-pressed={on}
-      aria-label={on ? 'Remove from favourites' : 'Add to favourites'}
+      aria-label={on ? 'Retirer des favoris' : 'Ajouter aux favoris'}
       onClick={(e) => {
         e.preventDefault(); e.stopPropagation();
         dispatch({ type: 'toggleFav', id });                 // mise à jour immédiate…
-        notify(on ? 'Removed from favourites' : 'Saved to favourites');
+        notify(on ? 'Retiré des favoris' : 'Ajouté aux favoris');
         api.setFav(id, !on).catch((err) => {                 // …annulée si le serveur refuse
           dispatch({ type: 'toggleFav', id });
           notify(err.message);
@@ -59,18 +59,30 @@ export function WorkoutRow({ w }) {
   return (
     <Link to={`/workout/${w.id}`} className="row">
       <div className="thumb"><Img src={w.photo} pos="center 25%" /></div>
-      <div className="t"><b>{w.title}</b><small>{w.min} min · {w.kcal} kcal · {w.level}</small></div>
+      <div className="t"><b>{w.title}</b><small>{w.min} min · {w.kcal} kcal · {levelFr(w.level)}</small></div>
       <Fav id={w.id} />
     </Link>
   );
 }
 
 export function CourseRow({ c }) {
-  const n = c.count ?? WORKOUTS.filter((w) => w.course === c.id).length;
+  const n = c.count ?? 0;
   return (
     <Link to={`/courses/${c.id}`} className="row">
       <div className="thumb"><Img src={c.photo} pos="center 25%" /></div>
-      <div className="t"><b>{c.name}</b><small>{n} Workout Programs</small></div>
+      <div className="t"><b>{c.name}</b><small>{n} {n === 1 ? 'programme' : 'programmes'} d'entraînement</small></div>
+    </Link>
+  );
+}
+
+export function CourseTile({ c }) {
+  const n = c.count ?? 0;
+  return (
+    <Link to={`/courses/${c.id}`} className="xtile">
+      <Img src={c.photo} pos="center 25%" />
+      <div className="shade" />
+      <b>{c.name}</b>
+      <small>{n} {n === 1 ? 'séance' : 'séances'}</small>
     </Link>
   );
 }
@@ -80,7 +92,7 @@ export function SearchBox({ value, onChange, placeholder }) {
     <label className="search">
       <Icon n="search" />
       <input value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} aria-label={placeholder} />
-      {value && <button type="button" aria-label="Clear" onClick={() => onChange('')}><Icon n="close" /></button>}
+      {value && <button type="button" aria-label="Effacer" onClick={() => onChange('')}><Icon n="close" /></button>}
     </label>
   );
 }
