@@ -17,6 +17,7 @@ const here = dirname(fileURLToPath(import.meta.url));
 
 const app = express();
 app.disable('x-powered-by');
+if (PROD) app.set('trust proxy', 1);          // derrière le proxy de l'hébergeur : vraie adresse IP des visiteurs (limitation des essais)
 // corps JSON limités à 10 ko, sauf l'enregistrement d'une activité (tracé GPS)
 const smallJson = express.json({ limit: '10kb' });
 const bigJson = express.json({ limit: '400kb' });

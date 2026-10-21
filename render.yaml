@@ -1,0 +1,29 @@
+# Déploiement Render (Blueprint) : un seul service Node qui sert le site compilé, l'API et le WebSocket (/ws).
+# Vercel ne convient pas : il ne fait tourner ni l'API Express ni le WebSocket des messages et appels vidéo.
+services:
+  - type: web
+    name: fitlife
+    runtime: node
+    plan: free
+    buildCommand: npm ci && npm run build
+    startCommand: node server/index.js
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_VERSION
+        value: 22
+      - key: NODE_ENV
+        value: production
+      - key: MONGODB_URI
+        sync: false            # à saisir dans Render (jamais dans Git)
+      - key: MONGODB_DB
+        value: fitpulse
+      - key: ADMIN_EMAILS
+        sync: false
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_KEY
+        sync: false
+      - key: SUPABASE_BUCKET
+        value: fitlife
+      - key: VITE_ASSETS_BASE   # lu à la compilation : adresse publique du bucket Supabase
+        sync: false

@@ -51,3 +51,9 @@ Messages privés, groupes de discussion, communautés (publiques ou sur invitati
 ## Interface
 
 Interface pensée pour le mobile uniquement (thème sombre + vert citron, d'après la maquette « Application mobile Fitness & Santé »). Sur grand écran, l'application reste une colonne centrée de 480 px.
+
+## Déploiement
+
+Un seul service Node sert tout : le site compilé (`dist/`), l'API `/api` et le WebSocket `/ws`. Il faut un hébergeur qui exécute un serveur Node en continu (Render, Railway, Fly…). **Vercel seul ne suffit pas** : il n'héberge que le site statique, donc l'API est absente (page de bienvenue qui ne charge pas) et le WebSocket n'existe pas.
+
+Avec Render : « New + > Blueprint » sur ce dépôt (fichier `render.yaml`), puis renseigner `MONGODB_URI`, `ADMIN_EMAILS`, `SUPABASE_URL`, `SUPABASE_SERVICE_KEY` et `VITE_ASSETS_BASE`. Dans MongoDB Atlas, autoriser l'accès réseau de l'hébergeur (Network Access, par ex. 0.0.0.0/0).

@@ -17,6 +17,7 @@ async function request(path, { method = 'GET', body } = {}) {
   let data = null;
   try { data = await res.json(); } catch { /* corps vide ou non JSON */ }
   if (!res.ok) throw new ApiError(data?.error || 'Une erreur est survenue.', res.status, data?.fields);
+  if (data === null) throw new ApiError("Le serveur de l'application ne répond pas correctement. Réessaie dans un instant.", 502);   // ex. API non déployée : le site reçoit une page HTML
   return data;
 }
 
